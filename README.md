@@ -40,6 +40,7 @@ Both configuration styles may be combined; `data-*` attributes take precedence. 
 - The `user_id` / `conversation_id` returned by the server are persisted in localStorage (namespaced per app_id) and resubmitted automatically to keep the context; the last 50 messages are stored locally so the history survives reloads.
 - The clear-history button in the panel header wipes the local history and identifiers (with a two-click confirmation) so the next message starts a fresh server-side conversation; an in-flight answer from the cleared conversation is aborted and discarded.
 - Answers grounded in RAG chunks show a collapsible "cited N sources" section listing each source.
+- Assistant answers render as GitHub-flavored markdown (headings, lists, tables, code blocks, links) with the input treated as untrusted text: raw HTML is escaped, `javascript:`/`data:` links are neutralized, and images are shown as alt text; the copy button copies the raw markdown source.
 - Every assistant answer carries a copy button (async Clipboard API, with an `execCommand` fallback for non-secure http embeds); it flips to "copied" for two seconds on success.
 - All styles live inside a Shadow DOM and cannot interfere with (or be affected by) the host page; on small screens (≤480px) the panel goes fullscreen.
 

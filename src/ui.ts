@@ -1,4 +1,5 @@
 import styles from './styles.css?inline';
+import { renderMarkdown } from './markdown';
 import type { ChatApiClient } from './api';
 import type { ConversationStore } from './storage';
 import type { Reference, StoredMessage, WidgetConfig } from './types';
@@ -193,15 +194,16 @@ export class ChatWidget {
     if (msg.isError) {
       el.className = 'message message--error';
       el.textContent = msg.text;
-    } else {
-      el.className = `message message--${msg.role}`;
-      el.textContent = msg.text; // textContent: never inject raw HTML
-      if (msg.role === 'assistant') {
-        el.appendChild(this.renderCopyButton(msg.text));
-        if (msg.references && msg.references.length > 0) {
-          el.appendChild(this.renderReferences(msg.references));
-        }
+    } else if (msg.role === 'assistant') {
+      el.className = 'message message--assistant';
+      renderMarkdown(el, msg.text); // answers arrive as markdown
+      if (msg.references && msg.references.length > 0) {
+        el.appendChild(this.renderReferences(msg.references));
       }
+      el.appendChild(this.renderCopyButton(msg.text));
+    } else {
+      el.className = 'message message--user';
+      el.textContent = msg.text; // visitor input stays literal
     }
     this.messagesEl.querySelector('.typing')?.remove();
     this.messagesEl.appendChild(el);
