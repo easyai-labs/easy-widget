@@ -1,9 +1,21 @@
 import type { WidgetConfig } from './types';
 
+/**
+ * The global config object. Canonical keys are snake_case; camelCase
+ * aliases are accepted because host pages frequently write them.
+ */
+export interface WidgetGlobal {
+  app_id?: string;
+  appId?: string;
+  base_url?: string;
+  baseUrl?: string;
+  title?: string;
+}
+
 declare global {
   interface Window {
     /** Optional configuration set by the host page before the script loads. */
-    EasyAIChatWidget?: Partial<WidgetConfig>;
+    EasyAIChatWidget?: WidgetGlobal;
   }
 }
 
@@ -27,6 +39,11 @@ const bootstrapScript = document.currentScript as HTMLScriptElement | null;
  * core-service needs no explicit base_url.
  */
 export function resolveConfig(): WidgetConfig | null {
+  if (!bootstrapScript) {
+    console.info(
+      '[easy-widget] loaded without its own <script> context (e.g. as an ES module or bundled by the host app); data-* attributes cannot be read — configure via window.EasyAIChatWidget.',
+    );
+  }
   const global = window.EasyAIChatWidget ?? {};
   const attrs = {
     app_id: bootstrapScript?.dataset.appId,
@@ -34,21 +51,23 @@ export function resolveConfig(): WidgetConfig | null {
     title: bootstrapScript?.dataset.title,
   };
 
-  const app_id = attrs.app_id ?? global.app_id;
+  const app_id = attrs.app_id ?? global.app_id ?? global.appId;
   const base_url = normalizeBaseUrl(
-    attrs.base_url ?? global.base_url ?? scriptOrigin(),
+    attrs.base_url ?? global.base_url ?? global.baseUrl ?? scriptOrigin(),
   );
   const title = attrs.title ?? global.title;
 
   if (!app_id || !base_url) {
     console.error(
-      '[easy-chat-widget] missing configuration: app_id and base_url are required.',
+      '[easy-widget] missing configuration: app_id and base_url are required.',
       { app_id, base_url },
     );
     return null;
   }
 
-  return { app_id, base_url, title };
+  const config = { app_id, base_url, title };
+  console.info('[easy-widget] booted with', config);
+  return config;
 }
 
 /** The origin serving this script, when it can be determined. */

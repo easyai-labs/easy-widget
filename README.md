@@ -32,7 +32,7 @@ Or set a global before the script loads:
 | `base_url` | No | core-service origin; defaults to the origin the script itself is served from (omit when core-service hosts the script) |
 | `title` | No | Name shown in the panel header and greeting; defaults to 智能客服 ("AI Support") |
 
-Both configuration styles may be combined; `data-*` attributes take precedence.
+Both configuration styles may be combined; `data-*` attributes take precedence. The global object also accepts camelCase aliases (`appId`, `baseUrl`). The effective configuration is logged to the browser console at startup as `[easy-widget] booted with …` — check it when requests seem to hit the wrong origin.
 
 ## Behavior
 
