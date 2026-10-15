@@ -1,11 +1,11 @@
 /** Widget configuration provided by the embedding site. */
 export interface WidgetConfig {
-  /** core-service project that owns the app. */
-  project_name: string;
-  /** App inside the project that answers the chat. */
-  app_name: string;
+  /** Unguessable app ID (UUID) the new chat endpoint addresses. */
+  app_id: string;
   /** core-service origin, e.g. https://ai.example.com. */
   base_url: string;
+  /** Optional display name shown in the panel header; defaults to 智能客服. */
+  title?: string;
 }
 
 /** One grounding chunk of a RAG answer. */

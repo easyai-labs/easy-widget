@@ -23,16 +23,16 @@
     <p>
       页面右下角应出现智能客服按钮。点击打开聊天窗口，发送消息会调用
       core-service 的公开 chat 接口
-      <code>/api/v1/pub/chat/completions/{project_name}/{app_name}</code>。
+      <code>/api/v1/pub/chat/completions/{app_id}</code>。
     </p>
-    <p>修改下方 data 属性可切换目标应用。</p>
+    <p>修改下方配置可切换目标应用。</p>
 
     <script>
       // Configuration read by the widget at startup.
       window.EasyAIChatWidget = {
-        project_name: 'rag-e2e',
-        app_name: 'docs-app',
+        app_id: 'd19f5e7c-a67d-47d2-8761-6f6e7988396b',
         base_url: 'http://127.0.0.1:8080',
+        title: 'Docs App 客服',
       };
     </script>
     <script type="module" src="/src/index.ts"></script>

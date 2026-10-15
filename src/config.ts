@@ -18,9 +18,9 @@ const bootstrapScript = document.currentScript as HTMLScriptElement | null;
  * Resolve the widget configuration. Both sources are supported:
  *
  * 1. data attributes on the script tag:
- *    <script src="..." data-project-name="p" data-app-name="a"></script>
+ *    <script src="..." data-app-id="uuid" data-title="客服"></script>
  * 2. a global set before the script loads:
- *    window.EasyAIChatWidget = { project_name: 'p', app_name: 'a' }
+ *    window.EasyAIChatWidget = { app_id: 'uuid' }
  *
  * Data attributes win when both provide the same key. base_url defaults
  * to the origin the script itself was served from, so a widget hosted by
@@ -29,26 +29,26 @@ const bootstrapScript = document.currentScript as HTMLScriptElement | null;
 export function resolveConfig(): WidgetConfig | null {
   const global = window.EasyAIChatWidget ?? {};
   const attrs = {
-    project_name: bootstrapScript?.dataset.projectName,
-    app_name: bootstrapScript?.dataset.appName,
+    app_id: bootstrapScript?.dataset.appId,
     base_url: bootstrapScript?.dataset.baseUrl,
+    title: bootstrapScript?.dataset.title,
   };
 
-  const project_name = attrs.project_name ?? global.project_name;
-  const app_name = attrs.app_name ?? global.app_name;
+  const app_id = attrs.app_id ?? global.app_id;
   const base_url = normalizeBaseUrl(
     attrs.base_url ?? global.base_url ?? scriptOrigin(),
   );
+  const title = attrs.title ?? global.title;
 
-  if (!project_name || !app_name || !base_url) {
+  if (!app_id || !base_url) {
     console.error(
-      '[easy-chat-widget] missing configuration: project_name, app_name and base_url are required.',
-      { project_name, app_name, base_url },
+      '[easy-chat-widget] missing configuration: app_id and base_url are required.',
+      { app_id, base_url },
     );
     return null;
   }
 
-  return { project_name, app_name, base_url };
+  return { app_id, base_url, title };
 }
 
 /** The origin serving this script, when it can be determined. */

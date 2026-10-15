@@ -3,14 +3,14 @@ import type { ChatRequestBody, ChatResponseBody, WidgetConfig } from './types';
 
 /**
  * Client for the core-service public chat endpoint:
- * POST {base_url}/api/v1/pub/chat/completions/{project}/{app}
+ * POST {base_url}/api/v1/pub/chat/completions/{app_id}
  */
 export class ChatApiClient {
   constructor(private readonly config: WidgetConfig) {}
 
   private get endpoint(): string {
-    const { base_url, project_name, app_name } = this.config;
-    return `${base_url}/api/v1/pub/chat/completions/${encodeURIComponent(project_name)}/${encodeURIComponent(app_name)}`;
+    const { base_url, app_id } = this.config;
+    return `${base_url}/api/v1/pub/chat/completions/${encodeURIComponent(app_id)}`;
   }
 
   async chat(body: ChatRequestBody, signal?: AbortSignal): Promise<ChatResponseBody> {

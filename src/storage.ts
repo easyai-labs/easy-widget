@@ -4,14 +4,14 @@ const HISTORY_CAP = 50;
 
 /**
  * Persists the end user's identifiers and visible message history in
- * localStorage, namespaced per project+app so several widgets on the
- * same site do not collide.
+ * localStorage, namespaced per app so several widgets on the same site
+ * do not collide.
  */
 export class ConversationStore {
   private readonly key: string;
 
-  constructor(projectName: string, appName: string) {
-    this.key = `easychat:${projectName}:${appName}`;
+  constructor(appId: string) {
+    this.key = `easychat:${appId}`;
   }
 
   load(): StoredConversation {

@@ -15,7 +15,7 @@ function boot(): void {
   if (!config) return; // resolveConfig logged the problem
 
   const api = new ChatApiClient(config);
-  const store = new ConversationStore(config.project_name, config.app_name);
+  const store = new ConversationStore(config.app_id);
   new ChatWidget(config, api, store).mount();
 }
 

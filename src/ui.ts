@@ -11,6 +11,8 @@ const ICON_BOT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const ICON_RESET = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>`;
 const ICON_SEND = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor" stroke="none"/></svg>`;
 
+const DEFAULT_TITLE = '智能客服';
+
 /**
  * The chat widget UI: a launcher button fixed to the bottom-right corner
  * and a chat panel, both rendered inside a shadow root so the host page's
@@ -58,7 +60,7 @@ export class ChatWidget {
     this.messagesEl = root.querySelector('.messages')!;
     this.inputEl = root.querySelector('textarea')!;
     this.sendBtnEl = root.querySelector('.send-btn')!;
-    root.querySelector('.header-title')!.textContent = humanize(this.config.app_name);
+    root.querySelector('.header-title')!.textContent = this.config.title ?? DEFAULT_TITLE;
 
     const launcher = root.querySelector('.launcher')!;
     launcher.addEventListener('click', () => this.toggle());
@@ -84,7 +86,7 @@ export class ChatWidget {
     document.body.appendChild(this.host);
     const stored = this.store.load();
     if (stored.messages.length === 0) {
-      this.renderMessage({ role: 'assistant', text: `你好！我是 ${humanize(this.config.app_name)} 智能客服，有什么可以帮你的吗？` });
+      this.renderMessage({ role: 'assistant', text: `你好！我是 ${this.config.title ?? DEFAULT_TITLE}，有什么可以帮你的吗？` });
     } else {
       for (const msg of stored.messages) this.renderMessage(msg);
     }
@@ -217,13 +219,4 @@ export class ChatWidget {
   private scrollToEnd(): void {
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
   }
-}
-
-/** "support-bot" -> "Support Bot" for display purposes. */
-function humanize(name: string): string {
-  return name
-    .split(/[-_]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 }
