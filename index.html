@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- Dev page: `npm run dev` serves this with the unbundled widget. -->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>easy-chat-widget dev demo</title>
+    <style>
+      body {
+        font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        max-width: 640px;
+        margin: 60px auto;
+        padding: 0 20px;
+        color: #333;
+        line-height: 1.7;
+      }
+      h1 { font-size: 22px; }
+      code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>宿主页面（模拟第三方网站）</h1>
+    <p>
+      页面右下角应出现智能客服按钮。点击打开聊天窗口，发送消息会调用
+      core-service 的公开 chat 接口
+      <code>/api/v1/pub/chat/completions/{project_name}/{app_name}</code>。
+    </p>
+    <p>修改下方 data 属性可切换目标应用。</p>
+
+    <script>
+      // Configuration read by the widget at startup.
+      window.EasyAIChatWidget = {
+        project_name: 'rag-e2e',
+        app_name: 'docs-app',
+        base_url: 'http://127.0.0.1:8080',
+      };
+    </script>
+    <script type="module" src="/src/index.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<!--
+  Standalone demo of the BUILT bundle: run `npm run build`, then serve
+  this directory, e.g. `npx serve demo` or `python3 -m http.server`
+  from the demo/ folder, and open the page.
+-->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>easy-chat-widget embed demo</title>
+    <style>
+      body {
+        font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        max-width: 640px;
+        margin: 60px auto;
+        padding: 0 20px;
+        color: #333;
+        line-height: 1.7;
+      }
+      h1 { font-size: 22px; }
+      code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>宿主页面（构建产物演示）</h1>
+    <p>本页面加载的是 <code>../dist/easy-chat-widget.js</code> 构建产物。</p>
+    <p>project_name / app_name / base_url 全部通过 script 标签的 data 属性传入。</p>
+
+    <script
+      src="../dist/easy-chat-widget.js"
+      data-project-name="rag-e2e"
+      data-app-name="docs-app"
+      data-base-url="http://127.0.0.1:8080"
+    ></script>
+  </body>
+</html>
