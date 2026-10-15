@@ -27,6 +27,11 @@ export class ChatWidget {
   private readonly inputEl: HTMLTextAreaElement;
   private readonly sendBtnEl: HTMLButtonElement;
   private pending = false;
+  /** Bumped on every history clear; in-flight responses from an older
+   *  epoch are stale (their conversation was discarded) and get dropped. */
+  private epoch = 0;
+  /** Aborts the in-flight chat request when the history is cleared. */
+  private abortCtl: AbortController | null = null;
 
   constructor(
     private readonly config: WidgetConfig,
@@ -45,7 +50,7 @@ export class ChatWidget {
             <div class="header-status"><span class="status-dot"></span><span>在线</span></div>
           </div>
           <div class="header-actions">
-            <button type="button" class="icon-btn reset-btn" title="新建会话" aria-label="新建会话">${ICON_RESET}</button>
+            <button type="button" class="new-chat-btn" title="清空聊天记录并开启新会话" aria-label="开启新会话">${ICON_RESET}<span>新会话</span></button>
             <button type="button" class="icon-btn close-btn" title="关闭" aria-label="关闭聊天窗口">${ICON_CLOSE}</button>
           </div>
         </header>
@@ -67,7 +72,7 @@ export class ChatWidget {
     const launcher = root.querySelector('.launcher')!;
     launcher.addEventListener('click', () => this.toggle());
     root.querySelector('.close-btn')!.addEventListener('click', () => this.toggle(false));
-    root.querySelector('.reset-btn')!.addEventListener('click', () => this.resetConversation());
+    root.querySelector('.new-chat-btn')!.addEventListener('click', () => this.clearHistory());
 
     const form = root.querySelector('form')!;
     form.addEventListener('submit', (e) => {
@@ -105,11 +110,15 @@ export class ChatWidget {
     if (willOpen) this.inputEl.focus();
   }
 
-  /** Drop the stored conversation and start over with the greeting. */
-  private resetConversation(): void {
+  /** Drop the stored history and identifiers, starting a new conversation. */
+  private clearHistory(): void {
+    this.epoch++;
+    this.abortCtl?.abort(); // the in-flight request belongs to the discarded conversation
+    this.abortCtl = null;
     this.store.clear();
     this.messagesEl.replaceChildren();
-    this.renderMessage({ role: 'assistant', text: '已为你开始新的会话，请问有什么可以帮你？' });
+    if (this.pending) this.setPending(false); // free the composer immediately
+    this.renderMessage({ role: 'assistant', text: '已为你开启新的会话。有什么可以帮你的吗？' });
   }
 
   private async sendMessage(): Promise<void> {
@@ -121,14 +130,20 @@ export class ChatWidget {
     this.autogrow();
     this.renderMessage({ role: 'user', text });
     this.setPending(true);
+    const epoch = this.epoch;
+    this.abortCtl = new AbortController();
 
     const conv = this.store.load();
     try {
-      const res = await this.api.chat({
-        message: text,
-        user_id: conv.user_id,
-        conversation_id: conv.conversation_id,
-      });
+      const res = await this.api.chat(
+        {
+          message: text,
+          user_id: conv.user_id,
+          conversation_id: conv.conversation_id,
+        },
+        this.abortCtl.signal,
+      );
+      if (epoch !== this.epoch) return; // history was cleared mid-flight
       this.renderMessage({ role: 'assistant', text: res.answer, references: res.references ?? [] });
       this.store.save({
         user_id: res.user_id,
@@ -140,6 +155,7 @@ export class ChatWidget {
         ],
       });
     } catch (err) {
+      if (epoch !== this.epoch) return; // history was cleared mid-flight
       // Put the failed text back so the visitor can retry with one click.
       this.inputEl.value = text;
       this.autogrow();
@@ -149,8 +165,11 @@ export class ChatWidget {
         isError: true,
       });
     } finally {
-      this.setPending(false);
-      this.inputEl.focus();
+      this.abortCtl = null;
+      if (epoch === this.epoch) {
+        this.setPending(false);
+        this.inputEl.focus();
+      }
     }
   }
 
@@ -178,10 +197,10 @@ export class ChatWidget {
       el.className = `message message--${msg.role}`;
       el.textContent = msg.text; // textContent: never inject raw HTML
       if (msg.role === 'assistant') {
+        el.appendChild(this.renderCopyButton(msg.text));
         if (msg.references && msg.references.length > 0) {
           el.appendChild(this.renderReferences(msg.references));
         }
-        el.appendChild(this.renderCopyButton(msg.text));
       }
     }
     this.messagesEl.querySelector('.typing')?.remove();

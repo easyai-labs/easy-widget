@@ -157,6 +157,33 @@
   opacity: 1;
 }
 
+/* Labeled "new conversation" pill next to the close button. */
+.new-chat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  margin-right: 2px;
+  border: none;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.new-chat-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.new-chat-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
 .icon-btn svg {
   width: 17px;
   height: 17px;
