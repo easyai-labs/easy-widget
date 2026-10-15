@@ -1,4 +1,5 @@
 import { ChatApiError } from './types';
+import type { WidgetStrings } from './i18n';
 import type { ChatRequestBody, ChatResponseBody, WidgetConfig } from './types';
 
 /**
@@ -6,7 +7,10 @@ import type { ChatRequestBody, ChatResponseBody, WidgetConfig } from './types';
  * POST {base_url}/api/v1/pub/chat/completions/{app_id}
  */
 export class ChatApiClient {
-  constructor(private readonly config: WidgetConfig) {}
+  constructor(
+    private readonly config: WidgetConfig,
+    private readonly strings: WidgetStrings,
+  ) {}
 
   private get endpoint(): string {
     const { base_url, app_id } = this.config;
@@ -24,23 +28,23 @@ export class ChatApiClient {
       });
     } catch (err) {
       if ((err as Error).name === 'AbortError') throw err;
-      throw new ChatApiError(0, '无法连接客服服务，请稍后重试');
+      throw new ChatApiError(0, this.strings.networkError);
     }
 
     if (!res.ok) {
-      throw new ChatApiError(res.status, await errorMessage(res));
+      throw new ChatApiError(res.status, await this.errorMessage(res));
     }
     return (await res.json()) as ChatResponseBody;
   }
-}
 
-/** Prefer the server's error field, fall back to the HTTP reason. */
-async function errorMessage(res: Response): Promise<string> {
-  try {
-    const data = (await res.json()) as { error?: string };
-    if (data?.error) return data.error;
-  } catch {
-    // Not a JSON error body.
+  /** Prefer the server's error field, fall back to the HTTP reason. */
+  private async errorMessage(res: Response): Promise<string> {
+    try {
+      const data = (await res.json()) as { error?: string };
+      if (data?.error) return data.error;
+    } catch {
+      // Not a JSON error body.
+    }
+    return this.strings.httpError(res.status);
   }
-  return `请求失败（HTTP ${res.status}）`;
 }

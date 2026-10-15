@@ -30,7 +30,8 @@ Or set a global before the script loads:
 | --- | --- | --- |
 | `app_id` | Yes | The app's ID (UUID, obtained after creating the app in core-service); the endpoint resolves the knowledge base and model from it |
 | `base_url` | No | core-service origin; defaults to the origin the script itself is served from (omit when core-service hosts the script) |
-| `title` | No | Name shown in the panel header and greeting; defaults to 智能客服 ("AI Support") |
+| `title` | No | Name shown in the panel header and greeting; defaults to a localized "AI Support" / 智能客服 |
+| `locale` | No | UI language tag (`zh-CN`, `en`); defaults to the visitor's browser language. To add a language, extend the dictionaries in `src/i18n.ts` |
 
 Both configuration styles may be combined; `data-*` attributes take precedence. The global object also accepts camelCase aliases (`appId`, `baseUrl`). The effective configuration is logged to the browser console at startup as `[easy-widget] booted with …` — check it when requests seem to hit the wrong origin.
 

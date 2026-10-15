@@ -1,5 +1,7 @@
 import styles from './styles.css?inline';
 import { renderMarkdown } from './markdown';
+import { stringsFor } from './i18n';
+import type { WidgetStrings } from './i18n';
 import type { ChatApiClient } from './api';
 import type { ConversationStore } from './storage';
 import type { Reference, StoredMessage, WidgetConfig } from './types';
@@ -14,8 +16,6 @@ const ICON_SEND = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const ICON_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
 
-const DEFAULT_TITLE = '智能客服';
-
 /**
  * The chat widget UI: a launcher button fixed to the bottom-right corner
  * and a chat panel, both rendered inside a shadow root so the host page's
@@ -27,6 +27,7 @@ export class ChatWidget {
   private readonly messagesEl: HTMLElement;
   private readonly inputEl: HTMLTextAreaElement;
   private readonly sendBtnEl: HTMLButtonElement;
+  private readonly t: WidgetStrings;
   private pending = false;
   /** Bumped on every history clear; in-flight responses from an older
    *  epoch are stale (their conversation was discarded) and get dropped. */
@@ -39,36 +40,37 @@ export class ChatWidget {
     private readonly api: ChatApiClient,
     private readonly store: ConversationStore,
   ) {
+    this.t = stringsFor(config.locale);
     this.host = document.createElement('easy-chat-widget');
     const root = this.host.attachShadow({ mode: 'open' });
     root.innerHTML = `
       <style>${styles}</style>
-      <div class="panel" hidden role="dialog" aria-label="智能客服聊天窗口">
+      <div class="panel" hidden role="dialog" aria-label="${this.t.panelAria}">
         <header class="panel-header">
           <div class="avatar">${ICON_BOT}</div>
           <div class="header-text">
             <div class="header-title"></div>
-            <div class="header-status"><span class="status-dot"></span><span>在线</span></div>
+            <div class="header-status"><span class="status-dot"></span><span>${this.t.statusOnline}</span></div>
           </div>
           <div class="header-actions">
-            <button type="button" class="new-chat-btn" title="清空聊天记录并开启新会话" aria-label="开启新会话">${ICON_RESET}<span>新会话</span></button>
-            <button type="button" class="icon-btn close-btn" title="关闭" aria-label="关闭聊天窗口">${ICON_CLOSE}</button>
+            <button type="button" class="new-chat-btn" title="${this.t.newChatTitle}" aria-label="${this.t.newChatAria}">${ICON_RESET}<span>${this.t.newChatLabel}</span></button>
+            <button type="button" class="icon-btn close-btn" title="${this.t.closeTitle}" aria-label="${this.t.closeAria}">${ICON_CLOSE}</button>
           </div>
         </header>
         <div class="messages"></div>
         <form class="composer">
-          <textarea rows="1" placeholder="输入消息…" maxlength="${MAX_MESSAGE_LENGTH}" aria-label="消息输入框"></textarea>
-          <button type="submit" class="send-btn" aria-label="发送">${ICON_SEND}</button>
+          <textarea rows="1" placeholder="${this.t.inputPlaceholder}" maxlength="${MAX_MESSAGE_LENGTH}" aria-label="${this.t.inputAria}"></textarea>
+          <button type="submit" class="send-btn" aria-label="${this.t.sendAria}">${ICON_SEND}</button>
         </form>
       </div>
-      <button type="button" class="launcher" aria-label="打开智能客服" aria-expanded="false">${ICON_CHAT}</button>
+      <button type="button" class="launcher" aria-label="${this.t.launcherAria}" aria-expanded="false">${ICON_CHAT}</button>
     `;
 
     this.panel = root.querySelector('.panel')!;
     this.messagesEl = root.querySelector('.messages')!;
     this.inputEl = root.querySelector('textarea')!;
     this.sendBtnEl = root.querySelector('.send-btn')!;
-    root.querySelector('.header-title')!.textContent = this.config.title ?? DEFAULT_TITLE;
+    root.querySelector('.header-title')!.textContent = this.config.title ?? this.t.defaultTitle;
 
     const launcher = root.querySelector('.launcher')!;
     launcher.addEventListener('click', () => this.toggle());
@@ -94,7 +96,7 @@ export class ChatWidget {
     document.body.appendChild(this.host);
     const stored = this.store.load();
     if (stored.messages.length === 0) {
-      this.renderMessage({ role: 'assistant', text: `你好！我是 ${this.config.title ?? DEFAULT_TITLE}，有什么可以帮你的吗？` });
+      this.renderMessage({ role: 'assistant', text: this.t.greeting(this.config.title ?? this.t.defaultTitle) });
     } else {
       for (const msg of stored.messages) this.renderMessage(msg);
     }
@@ -119,7 +121,7 @@ export class ChatWidget {
     this.store.clear();
     this.messagesEl.replaceChildren();
     if (this.pending) this.setPending(false); // free the composer immediately
-    this.renderMessage({ role: 'assistant', text: '已为你开启新的会话。有什么可以帮你的吗？' });
+    this.renderMessage({ role: 'assistant', text: this.t.newConversationNotice });
   }
 
   private async sendMessage(): Promise<void> {
@@ -162,7 +164,7 @@ export class ChatWidget {
       this.autogrow();
       this.renderMessage({
         role: 'assistant',
-        text: `${(err as Error).message}\n（你的消息已恢复到输入框，可直接重试）`,
+        text: `${(err as Error).message}\n${this.t.errorRetryHint}`,
         isError: true,
       });
     } finally {
@@ -215,17 +217,17 @@ export class ChatWidget {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'copy-btn';
-    btn.setAttribute('aria-label', '复制回答');
-    btn.innerHTML = `${ICON_COPY}<span>复制</span>`;
+    btn.setAttribute('aria-label', this.t.copyAria);
+    btn.innerHTML = `${ICON_COPY}<span>${this.t.copy}</span>`;
     btn.addEventListener('click', () => {
       void copyText(text).then((ok) => {
         btn.classList.add(ok ? 'copied' : 'failed');
         btn.innerHTML = ok
-          ? `${ICON_CHECK}<span>已复制</span>`
-          : `${ICON_CLOSE}<span>复制失败</span>`;
+          ? `${ICON_CHECK}<span>${this.t.copied}</span>`
+          : `${ICON_CLOSE}<span>${this.t.copyFailed}</span>`;
         setTimeout(() => {
           btn.classList.remove('copied', 'failed');
-          btn.innerHTML = `${ICON_COPY}<span>复制</span>`;
+          btn.innerHTML = `${ICON_COPY}<span>${this.t.copy}</span>`;
         }, 2000);
       });
     });
@@ -237,7 +239,7 @@ export class ChatWidget {
     const details = document.createElement('details');
     details.className = 'refs';
     const summary = document.createElement('summary');
-    summary.textContent = `引用了 ${refs.length} 个来源`;
+    summary.textContent = this.t.refsSummary(refs.length);
     const list = document.createElement('ul');
     for (const ref of refs) {
       const item = document.createElement('li');

@@ -4,8 +4,10 @@ export interface WidgetConfig {
   app_id: string;
   /** core-service origin, e.g. https://ai.example.com. */
   base_url: string;
-  /** Optional display name shown in the panel header; defaults to 智能客服. */
+  /** Optional display name shown in the panel header; defaults to a localized "AI Support". */
   title?: string;
+  /** Optional locale tag (e.g. zh-CN, en); defaults to the browser language. */
+  locale?: string;
 }
 
 /** One grounding chunk of a RAG answer. */

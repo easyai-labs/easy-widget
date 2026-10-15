@@ -1,5 +1,6 @@
 import { ChatApiClient } from './api';
 import { resolveConfig } from './config';
+import { stringsFor } from './i18n';
 import { ConversationStore } from './storage';
 import { ChatWidget } from './ui';
 
@@ -14,7 +15,7 @@ function boot(): void {
   const config = resolveConfig();
   if (!config) return; // resolveConfig logged the problem
 
-  const api = new ChatApiClient(config);
+  const api = new ChatApiClient(config, stringsFor(config.locale));
   const store = new ConversationStore(config.app_id);
   new ChatWidget(config, api, store).mount();
 }

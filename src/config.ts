@@ -10,6 +10,7 @@ export interface WidgetGlobal {
   base_url?: string;
   baseUrl?: string;
   title?: string;
+  locale?: string;
 }
 
 declare global {
@@ -49,6 +50,7 @@ export function resolveConfig(): WidgetConfig | null {
     app_id: bootstrapScript?.dataset.appId,
     base_url: bootstrapScript?.dataset.baseUrl,
     title: bootstrapScript?.dataset.title,
+    locale: bootstrapScript?.dataset.locale,
   };
 
   const app_id = attrs.app_id ?? global.app_id ?? global.appId;
@@ -56,6 +58,7 @@ export function resolveConfig(): WidgetConfig | null {
     attrs.base_url ?? global.base_url ?? global.baseUrl ?? scriptOrigin(),
   );
   const title = attrs.title ?? global.title;
+  const locale = attrs.locale ?? global.locale;
 
   if (!app_id || !base_url) {
     console.error(
@@ -65,7 +68,7 @@ export function resolveConfig(): WidgetConfig | null {
     return null;
   }
 
-  const config = { app_id, base_url, title };
+  const config = { app_id, base_url, title, locale };
   console.info('[easy-widget] booted with', config);
   return config;
 }
