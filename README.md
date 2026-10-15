@@ -6,7 +6,7 @@ An embeddable AI customer-service chat widget for third-party websites. Once emb
 
 ```html
 <script
-  src="https://<your-core-service-host>/widget/easy-chat-widget.js"
+  src="https://<your-core-service-host>/widget/easy-widget.js"
   data-app-id="d19f5e7c-a67d-47d2-8761-6f6e7988396b"
 ></script>
 ```
@@ -21,7 +21,7 @@ Or set a global before the script loads:
     title: 'Support',
   };
 </script>
-<script src="easy-chat-widget.js"></script>
+<script src="easy-widget.js"></script>
 ```
 
 ## Configuration
@@ -47,7 +47,7 @@ Both configuration styles may be combined; `data-*` attributes take precedence.
 
 ```bash
 npm run dev     # start the dev server and open the demo page at the project root
-npm run build   # build dist/easy-chat-widget.js (single-file IIFE, zero dependencies)
+npm run build   # build dist/easy-widget.js (single-file IIFE, zero dependencies)
 ```
 
 Local testing requires core-service running on `127.0.0.1:8080` (see ../core-service). To verify the built bundle: run `npm run build`, then serve the demo/ directory with any static file server and open `demo.html`.

@@ -8,7 +8,7 @@ export default defineConfig({
       entry: 'src/index.ts',
       name: 'EasyChatWidget',
       formats: ['iife'],
-      fileName: () => 'easy-chat-widget.js',
+      fileName: () => 'easy-widget.js',
     },
     minify: true,
     target: 'es2018',
