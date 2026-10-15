@@ -40,6 +40,7 @@ Both configuration styles may be combined; `data-*` attributes take precedence.
 - The `user_id` / `conversation_id` returned by the server are persisted in localStorage (namespaced per app_id) and resubmitted automatically to keep the context; the last 50 messages are stored locally so the history survives reloads.
 - The "new conversation" button in the panel header clears the local conversation and starts fresh.
 - Answers grounded in RAG chunks show a collapsible "cited N sources" section listing each source.
+- Every assistant answer carries a copy button (async Clipboard API, with an `execCommand` fallback for non-secure http embeds); it flips to "copied" for two seconds on success.
 - All styles live inside a Shadow DOM and cannot interfere with (or be affected by) the host page; on small screens (≤480px) the panel goes fullscreen.
 
 ## Development

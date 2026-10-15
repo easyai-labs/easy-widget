@@ -271,6 +271,41 @@
   flex-shrink: 0;
 }
 
+/* Copy action shown under assistant answers. */
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px 0 0;
+  margin-top: 2px;
+}
+
+.copy-btn:hover {
+  color: #4f46e5;
+}
+
+.copy-btn.copied,
+.copy-btn.copied:hover {
+  color: #10b981;
+}
+
+.copy-btn.failed,
+.copy-btn.failed:hover {
+  color: #ef4444;
+}
+
+.copy-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
 /* Typing indicator shown while waiting for the answer. */
 
 .typing {

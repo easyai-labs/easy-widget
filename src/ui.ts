@@ -10,6 +10,8 @@ const ICON_CLOSE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const ICON_BOT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1"/><circle cx="9" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1" fill="currentColor" stroke="none"/></svg>`;
 const ICON_RESET = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>`;
 const ICON_SEND = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor" stroke="none"/></svg>`;
+const ICON_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
 
 const DEFAULT_TITLE = '智能客服';
 
@@ -175,13 +177,38 @@ export class ChatWidget {
     } else {
       el.className = `message message--${msg.role}`;
       el.textContent = msg.text; // textContent: never inject raw HTML
-      if (msg.role === 'assistant' && msg.references && msg.references.length > 0) {
-        el.appendChild(this.renderReferences(msg.references));
+      if (msg.role === 'assistant') {
+        if (msg.references && msg.references.length > 0) {
+          el.appendChild(this.renderReferences(msg.references));
+        }
+        el.appendChild(this.renderCopyButton(msg.text));
       }
     }
     this.messagesEl.querySelector('.typing')?.remove();
     this.messagesEl.appendChild(el);
     this.scrollToEnd();
+  }
+
+  /** Copy-to-clipboard action shown under assistant answers. */
+  private renderCopyButton(text: string): HTMLElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.setAttribute('aria-label', '复制回答');
+    btn.innerHTML = `${ICON_COPY}<span>复制</span>`;
+    btn.addEventListener('click', () => {
+      void copyText(text).then((ok) => {
+        btn.classList.add(ok ? 'copied' : 'failed');
+        btn.innerHTML = ok
+          ? `${ICON_CHECK}<span>已复制</span>`
+          : `${ICON_CLOSE}<span>复制失败</span>`;
+        setTimeout(() => {
+          btn.classList.remove('copied', 'failed');
+          btn.innerHTML = `${ICON_COPY}<span>复制</span>`;
+        }, 2000);
+      });
+    });
+    return btn;
   }
 
   /** Collapsible list of the grounding chunks behind an answer. */
@@ -218,5 +245,31 @@ export class ChatWidget {
 
   private scrollToEnd(): void {
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+  }
+}
+
+/**
+ * Copy text to the clipboard. Falls back to a hidden textarea +
+ * execCommand when the async Clipboard API is unavailable (non-secure
+ * http embeds) or rejected.
+ */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
   }
 }
