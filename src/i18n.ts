@@ -14,6 +14,7 @@ export interface WidgetStrings {
   newChatAria: string;
   greeting: (title: string) => string;
   newConversationNotice: string;
+  faqHeading: string;
   copyAria: string;
   copy: string;
   copied: string;
@@ -39,6 +40,7 @@ const zhCN: WidgetStrings = {
   newChatAria: '开启新会话',
   greeting: (title) => `你好！我是 ${title}，有什么可以帮你的吗？`,
   newConversationNotice: '已为你开启新的会话。有什么可以帮你的吗？',
+  faqHeading: '常见问题',
   copyAria: '复制回答',
   copy: '复制',
   copied: '已复制',
@@ -64,6 +66,7 @@ const en: WidgetStrings = {
   newChatAria: 'Start a new conversation',
   greeting: (title) => `Hi! I'm ${title}. How can I help you?`,
   newConversationNotice: 'Started a new conversation. How can I help you?',
+  faqHeading: 'Quick questions',
   copyAria: 'Copy answer',
   copy: 'Copy',
   copied: 'Copied',

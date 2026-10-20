@@ -1,6 +1,11 @@
 import { ChatApiError } from './types';
 import type { WidgetStrings } from './i18n';
-import type { ChatRequestBody, ChatResponseBody, WidgetConfig } from './types';
+import type {
+  ChatRequestBody,
+  ChatResponseBody,
+  FaqResponseBody,
+  WidgetConfig,
+} from './types';
 
 /**
  * Client for the core-service public chat endpoint:
@@ -35,6 +40,23 @@ export class ChatApiClient {
       throw new ChatApiError(res.status, await this.errorMessage(res));
     }
     return (await res.json()) as ChatResponseBody;
+  }
+
+  /** The app's curated FAQ; entries without an answer are chat starters. */
+  async faqs(): Promise<FaqResponseBody> {
+    const { base_url, app_id } = this.config;
+    let res: Response;
+    try {
+      res = await fetch(
+        `${base_url}/api/v1/pub/apps/${encodeURIComponent(app_id)}/faq`,
+      );
+    } catch {
+      throw new ChatApiError(0, this.strings.networkError);
+    }
+    if (!res.ok) {
+      throw new ChatApiError(res.status, await this.errorMessage(res));
+    }
+    return (await res.json()) as FaqResponseBody;
   }
 
   /** Prefer the server's error field, fall back to the HTTP reason. */

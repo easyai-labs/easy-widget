@@ -4,6 +4,7 @@ import { stringsFor } from './i18n';
 import type { WidgetStrings } from './i18n';
 import type { ChatApiClient } from './api';
 import type { ConversationStore } from './storage';
+import type { FaqEntry } from './types';
 import type { Reference, StoredMessage, WidgetConfig } from './types';
 
 const MAX_MESSAGE_LENGTH = 4096;
@@ -34,6 +35,8 @@ export class ChatWidget {
   private epoch = 0;
   /** Aborts the in-flight chat request when the history is cleared. */
   private abortCtl: AbortController | null = null;
+  /** Curated FAQ of the app, kept so a fresh conversation can re-show it. */
+  private faqs: FaqEntry[] = [];
 
   constructor(
     private readonly config: WidgetConfig,
@@ -97,12 +100,58 @@ export class ChatWidget {
     const stored = this.store.load();
     if (stored.messages.length === 0) {
       this.renderMessage({ role: 'assistant', text: this.t.greeting(this.config.title ?? this.t.defaultTitle) });
+      void this.loadFaqs(); // suggestions for a fresh conversation
     } else {
       for (const msg of stored.messages) this.renderMessage(msg);
     }
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.toggle(false);
     });
+  }
+
+  /** Fetch the curated FAQ; failures are silent — it is an enhancement. */
+  private async loadFaqs(): Promise<void> {
+    try {
+      const res = await this.api.faqs();
+      this.faqs = (res.questions ?? []).filter((entry) => entry.question);
+      this.renderFaqs();
+    } catch {
+      // FAQ is optional; the chat keeps working without it.
+    }
+  }
+
+  /** Show the FAQ chips below the greeting of a fresh conversation. */
+  private renderFaqs(): void {
+    this.messagesEl.querySelector('.faq-list')?.remove();
+    if (this.faqs.length === 0) return;
+    const list = document.createElement('div');
+    list.className = 'faq-list';
+    const heading = document.createElement('div');
+    heading.className = 'faq-heading';
+    heading.textContent = this.t.faqHeading;
+    list.appendChild(heading);
+    for (const entry of this.faqs) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'faq-chip';
+      chip.textContent = entry.question;
+      chip.addEventListener('click', () => {
+        list.remove();
+        if (entry.answer && entry.answer.trim() !== '') {
+          // Curated answer: show it directly, no chat round-trip.
+          this.renderMessage({ role: 'user', text: entry.question });
+          this.renderMessage({ role: 'assistant', text: entry.answer });
+          this.inputEl.focus();
+        } else {
+          // No canned answer: ask through the normal chat pipeline.
+          this.inputEl.value = entry.question;
+          void this.sendMessage();
+        }
+      });
+      list.appendChild(chip);
+    }
+    this.messagesEl.appendChild(list);
+    this.scrollToEnd();
   }
 
   private toggle(open?: boolean): void {
@@ -122,6 +171,7 @@ export class ChatWidget {
     this.messagesEl.replaceChildren();
     if (this.pending) this.setPending(false); // free the composer immediately
     this.renderMessage({ role: 'assistant', text: this.t.newConversationNotice });
+    this.renderFaqs(); // fresh conversation: suggest the FAQ again
   }
 
   private async sendMessage(): Promise<void> {

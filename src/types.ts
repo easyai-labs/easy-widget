@@ -48,6 +48,17 @@ export interface StoredConversation {
   messages: StoredMessage[];
 }
 
+/** One curated FAQ entry of the app (answer null = chat starter). */
+export interface FaqEntry {
+  question: string;
+  answer: string | null;
+}
+
+/** Response of GET /api/v1/pub/apps/{app_id}/faq. */
+export interface FaqResponseBody {
+  questions: FaqEntry[];
+}
+
 export class ChatApiError extends Error {
   constructor(
     public status: number,
