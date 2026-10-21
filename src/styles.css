@@ -458,6 +458,34 @@
   margin: 10px 0;
 }
 
+/* Inline media in assistant answers: never wider than the bubble. */
+
+.message--assistant img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 4px 0 8px;
+}
+
+.message--assistant video {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 8px;
+  background: #000;
+  margin: 4px 0 8px;
+}
+
+.message--assistant iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 260px;
+  border: none;
+  border-radius: 8px;
+  margin: 4px 0 8px;
+}
 
 /* Copy action shown under assistant answers. */
 
