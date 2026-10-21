@@ -1,7 +1,6 @@
 /** Every user-facing string of the widget, per locale. */
 export interface WidgetStrings {
   defaultTitle: string;
-  statusOnline: string;
   inputPlaceholder: string;
   inputAria: string;
   sendAria: string;
@@ -9,12 +8,14 @@ export interface WidgetStrings {
   panelAria: string;
   closeTitle: string;
   closeAria: string;
-  newChatLabel: string;
   newChatTitle: string;
   newChatAria: string;
-  greeting: (title: string) => string;
+  heroHi: string;
+  heroIdentity: (title: string) => string;
+  heroSubtitle: string;
   newConversationNotice: string;
-  faqHeading: string;
+  refreshFaqs: string;
+  faqAria: string;
   copyAria: string;
   copy: string;
   copied: string;
@@ -27,7 +28,6 @@ export interface WidgetStrings {
 
 const zhCN: WidgetStrings = {
   defaultTitle: '智能客服',
-  statusOnline: '在线',
   inputPlaceholder: '输入消息…',
   inputAria: '消息输入框',
   sendAria: '发送',
@@ -35,12 +35,14 @@ const zhCN: WidgetStrings = {
   panelAria: '智能客服聊天窗口',
   closeTitle: '关闭',
   closeAria: '关闭聊天窗口',
-  newChatLabel: '新会话',
   newChatTitle: '清空聊天记录并开启新会话',
   newChatAria: '开启新会话',
-  greeting: (title) => `你好！我是 ${title}，有什么可以帮你的吗？`,
+  heroHi: 'Hi～',
+  heroIdentity: (title) => `我是 ${title} 🙌`,
+  heroSubtitle: '遇到问题、想了解什么，直接告诉我就好',
   newConversationNotice: '已为你开启新的会话。有什么可以帮你的吗？',
-  faqHeading: '常见问题',
+  refreshFaqs: '换一批',
+  faqAria: '常见问题',
   copyAria: '复制回答',
   copy: '复制',
   copied: '已复制',
@@ -53,7 +55,6 @@ const zhCN: WidgetStrings = {
 
 const en: WidgetStrings = {
   defaultTitle: 'AI Support',
-  statusOnline: 'Online',
   inputPlaceholder: 'Type a message…',
   inputAria: 'Message input',
   sendAria: 'Send',
@@ -61,12 +62,14 @@ const en: WidgetStrings = {
   panelAria: 'AI support chat window',
   closeTitle: 'Close',
   closeAria: 'Close chat window',
-  newChatLabel: 'New chat',
   newChatTitle: 'Clear history and start a new conversation',
   newChatAria: 'Start a new conversation',
-  greeting: (title) => `Hi! I'm ${title}. How can I help you?`,
+  heroHi: 'Hi~',
+  heroIdentity: (title) => `I'm ${title} 🙌`,
+  heroSubtitle: 'Questions, problems, ideas — just tell me',
   newConversationNotice: 'Started a new conversation. How can I help you?',
-  faqHeading: 'Quick questions',
+  refreshFaqs: 'Refresh',
+  faqAria: 'Frequently asked questions',
   copyAria: 'Copy answer',
   copy: 'Copy',
   copied: 'Copied',
