@@ -43,6 +43,7 @@ export class ChatWidget {
   /** FAQ pagination; the refresh control advances and wraps to page 1. */
   private faqPage = 1;
   private faqTotal = 0;
+  private faqsLoading = false;
 
   constructor(
     private readonly config: WidgetConfig,
@@ -116,15 +117,17 @@ export class ChatWidget {
     document.body.appendChild(this.host);
     const stored = this.store.load();
     for (const msg of stored.messages) this.renderMessage(msg);
-    void this.loadFaqs(1);
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.toggle(false);
     });
   }
 
   /** Fetch one page of the curated FAQ; failures are silent — it is an
-   *  enhancement. The card starts hidden and only appears with data. */
+   *  enhancement. The card keeps its previous rows until fresh data
+   *  lands, and overlapping loads are ignored. */
   private async loadFaqs(page: number): Promise<void> {
+    if (this.faqsLoading) return;
+    this.faqsLoading = true;
     try {
       const res = await this.api.faqs(page, FAQ_PAGE_SIZE);
       this.faqPage = res.page || page;
@@ -132,6 +135,8 @@ export class ChatWidget {
       this.renderFaqPage(res.faqs);
     } catch {
       // FAQ is optional; the chat keeps working without it.
+    } finally {
+      this.faqsLoading = false;
     }
   }
 
@@ -181,7 +186,10 @@ export class ChatWidget {
     this.panel.hidden = !willOpen;
     const launcher = this.host.shadowRoot!.querySelector('.launcher') as HTMLButtonElement;
     launcher.setAttribute('aria-expanded', String(willOpen));
-    if (willOpen) this.inputEl.focus();
+    if (willOpen) {
+      void this.loadFaqs(1); // refresh the FAQ from the backend on every open
+      this.inputEl.focus();
+    }
   }
 
   /** Drop the stored history and identifiers, starting a new conversation. */
