@@ -50,13 +50,17 @@ export interface StoredConversation {
 
 /** One curated FAQ entry of the app (answer null = chat starter). */
 export interface FaqEntry {
+  id: string;
   question: string;
   answer: string | null;
 }
 
-/** Response of GET /api/v1/pub/apps/{app_id}/faq. */
+/** Response of GET /api/v1/pub/apps/{app_id}/faqs. */
 export interface FaqResponseBody {
-  questions: FaqEntry[];
+  faqs: FaqEntry[];
+  page: number;
+  page_size: number;
+  total: number;
 }
 
 export class ChatApiError extends Error {

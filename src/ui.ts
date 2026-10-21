@@ -11,11 +11,12 @@ const MAX_MESSAGE_LENGTH = 4096;
 
 const ICON_CHAT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
 const ICON_CLOSE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-const ICON_BOT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1"/><circle cx="9" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1" fill="currentColor" stroke="none"/></svg>`;
 const ICON_RESET = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>`;
 const ICON_SEND = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor" stroke="none"/></svg>`;
 const ICON_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
+const ICON_CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>`;
+const FAQ_PAGE_SIZE = 5;
 
 /**
  * The chat widget UI: a launcher button fixed to the bottom-right corner
@@ -25,9 +26,13 @@ const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 export class ChatWidget {
   private readonly host: HTMLElement;
   private readonly panel: HTMLElement;
+  private readonly scrollEl: HTMLElement;
   private readonly messagesEl: HTMLElement;
   private readonly inputEl: HTMLTextAreaElement;
   private readonly sendBtnEl: HTMLButtonElement;
+  private readonly faqCardEl: HTMLElement;
+  private readonly faqRowsEl: HTMLElement;
+  private readonly faqRefreshRowEl: HTMLElement;
   private readonly t: WidgetStrings;
   private pending = false;
   /** Bumped on every history clear; in-flight responses from an older
@@ -35,8 +40,9 @@ export class ChatWidget {
   private epoch = 0;
   /** Aborts the in-flight chat request when the history is cleared. */
   private abortCtl: AbortController | null = null;
-  /** Curated FAQ of the app, kept so a fresh conversation can re-show it. */
-  private faqs: FaqEntry[] = [];
+  /** FAQ pagination; the refresh control advances and wraps to page 1. */
+  private faqPage = 1;
+  private faqTotal = 0;
 
   constructor(
     private readonly config: WidgetConfig,
@@ -49,18 +55,24 @@ export class ChatWidget {
     root.innerHTML = `
       <style>${styles}</style>
       <div class="panel" hidden role="dialog" aria-label="${this.t.panelAria}">
-        <header class="panel-header">
-          <div class="avatar">${ICON_BOT}</div>
-          <div class="header-text">
-            <div class="header-title"></div>
-            <div class="header-status"><span class="status-dot"></span><span>${this.t.statusOnline}</span></div>
+        <div class="scroll">
+          <section class="hero">
+            <div class="hero-controls">
+              <button type="button" class="icon-btn new-chat-btn" title="${this.t.newChatTitle}" aria-label="${this.t.newChatAria}">${ICON_RESET}</button>
+              <button type="button" class="icon-btn close-btn" title="${this.t.closeTitle}" aria-label="${this.t.closeAria}">${ICON_CLOSE}</button>
+            </div>
+            <div class="hero-hi">${this.t.heroHi}</div>
+            <div class="hero-identity"></div>
+            <div class="hero-subtitle">${this.t.heroSubtitle}</div>
+          </section>
+          <section class="faq-card" hidden aria-label="${this.t.faqAria}">
+            <div class="faq-rows"></div>
+          </section>
+          <div class="faq-refresh-row" hidden>
+            <button type="button" class="faq-refresh">${ICON_RESET}<span>${this.t.refreshFaqs}</span></button>
           </div>
-          <div class="header-actions">
-            <button type="button" class="new-chat-btn" title="${this.t.newChatTitle}" aria-label="${this.t.newChatAria}">${ICON_RESET}<span>${this.t.newChatLabel}</span></button>
-            <button type="button" class="icon-btn close-btn" title="${this.t.closeTitle}" aria-label="${this.t.closeAria}">${ICON_CLOSE}</button>
-          </div>
-        </header>
-        <div class="messages"></div>
+          <div class="messages"></div>
+        </div>
         <form class="composer">
           <textarea rows="1" placeholder="${this.t.inputPlaceholder}" maxlength="${MAX_MESSAGE_LENGTH}" aria-label="${this.t.inputAria}"></textarea>
           <button type="submit" class="send-btn" aria-label="${this.t.sendAria}">${ICON_SEND}</button>
@@ -70,15 +82,20 @@ export class ChatWidget {
     `;
 
     this.panel = root.querySelector('.panel')!;
+    this.scrollEl = root.querySelector('.scroll')!;
     this.messagesEl = root.querySelector('.messages')!;
     this.inputEl = root.querySelector('textarea')!;
     this.sendBtnEl = root.querySelector('.send-btn')!;
-    root.querySelector('.header-title')!.textContent = this.config.title ?? this.t.defaultTitle;
+    this.faqCardEl = root.querySelector('.faq-card')!;
+    this.faqRowsEl = root.querySelector('.faq-rows')!;
+    this.faqRefreshRowEl = root.querySelector('.faq-refresh-row')!;
+    root.querySelector('.hero-identity')!.textContent = this.t.heroIdentity(this.config.title ?? this.t.defaultTitle);
 
     const launcher = root.querySelector('.launcher')!;
     launcher.addEventListener('click', () => this.toggle());
     root.querySelector('.close-btn')!.addEventListener('click', () => this.toggle(false));
     root.querySelector('.new-chat-btn')!.addEventListener('click', () => this.clearHistory());
+    root.querySelector('.faq-refresh')!.addEventListener('click', () => this.nextFaqPage());
 
     const form = root.querySelector('form')!;
     form.addEventListener('submit', (e) => {
@@ -98,60 +115,65 @@ export class ChatWidget {
   mount(): void {
     document.body.appendChild(this.host);
     const stored = this.store.load();
-    if (stored.messages.length === 0) {
-      this.renderMessage({ role: 'assistant', text: this.t.greeting(this.config.title ?? this.t.defaultTitle) });
-      void this.loadFaqs(); // suggestions for a fresh conversation
-    } else {
-      for (const msg of stored.messages) this.renderMessage(msg);
-    }
+    for (const msg of stored.messages) this.renderMessage(msg);
+    void this.loadFaqs(1);
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.toggle(false);
     });
   }
 
-  /** Fetch the curated FAQ; failures are silent — it is an enhancement. */
-  private async loadFaqs(): Promise<void> {
+  /** Fetch one page of the curated FAQ; failures are silent — it is an
+   *  enhancement. The card starts hidden and only appears with data. */
+  private async loadFaqs(page: number): Promise<void> {
     try {
-      const res = await this.api.faqs();
-      this.faqs = (res.questions ?? []).filter((entry) => entry.question);
-      this.renderFaqs();
+      const res = await this.api.faqs(page, FAQ_PAGE_SIZE);
+      this.faqPage = res.page || page;
+      this.faqTotal = res.total;
+      this.renderFaqPage(res.faqs);
     } catch {
       // FAQ is optional; the chat keeps working without it.
     }
   }
 
-  /** Show the FAQ chips below the greeting of a fresh conversation. */
-  private renderFaqs(): void {
-    this.messagesEl.querySelector('.faq-list')?.remove();
-    if (this.faqs.length === 0) return;
-    const list = document.createElement('div');
-    list.className = 'faq-list';
-    const heading = document.createElement('div');
-    heading.className = 'faq-heading';
-    heading.textContent = this.t.faqHeading;
-    list.appendChild(heading);
-    for (const entry of this.faqs) {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'faq-chip';
-      chip.textContent = entry.question;
-      chip.addEventListener('click', () => {
-        list.remove();
-        if (entry.answer && entry.answer.trim() !== '') {
-          // Curated answer: show it directly, no chat round-trip.
-          this.renderMessage({ role: 'user', text: entry.question });
-          this.renderMessage({ role: 'assistant', text: entry.answer });
-          this.inputEl.focus();
-        } else {
-          // No canned answer: ask through the normal chat pipeline.
-          this.inputEl.value = entry.question;
-          void this.sendMessage();
-        }
-      });
-      list.appendChild(chip);
-    }
-    this.messagesEl.appendChild(list);
-    this.scrollToEnd();
+  /** Advance to the next FAQ page, wrapping back to the first. */
+  private nextFaqPage(): void {
+    const lastPage = Math.max(1, Math.ceil(this.faqTotal / FAQ_PAGE_SIZE));
+    const next = this.faqPage >= lastPage ? 1 : this.faqPage + 1;
+    void this.loadFaqs(next);
+  }
+
+  /** Render the current FAQ page as the card's question rows. */
+  private renderFaqPage(entries: FaqEntry[]): void {
+    const rows = entries.filter((entry) => entry.question);
+    this.faqCardEl.hidden = rows.length === 0;
+    this.faqRefreshRowEl.hidden = this.faqTotal <= FAQ_PAGE_SIZE;
+    this.faqRowsEl.replaceChildren(
+      ...rows.map((entry) => {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'faq-row';
+        const label = document.createElement('span');
+        label.className = 'faq-question';
+        label.textContent = entry.question;
+        const chev = document.createElement('span');
+        chev.className = 'faq-chev';
+        chev.innerHTML = ICON_CHEVRON;
+        row.append(label, chev);
+        row.addEventListener('click', () => {
+          if (entry.answer && entry.answer.trim() !== '') {
+            // Curated answer: show it directly, no chat round-trip.
+            this.renderMessage({ role: 'user', text: entry.question });
+            this.renderMessage({ role: 'assistant', text: entry.answer });
+            this.inputEl.focus();
+          } else {
+            // No canned answer: ask through the normal chat pipeline.
+            this.inputEl.value = entry.question;
+            void this.sendMessage();
+          }
+        });
+        return row;
+      }),
+    );
   }
 
   private toggle(open?: boolean): void {
@@ -171,7 +193,6 @@ export class ChatWidget {
     this.messagesEl.replaceChildren();
     if (this.pending) this.setPending(false); // free the composer immediately
     this.renderMessage({ role: 'assistant', text: this.t.newConversationNotice });
-    this.renderFaqs(); // fresh conversation: suggest the FAQ again
   }
 
   private async sendMessage(): Promise<void> {
@@ -317,7 +338,7 @@ export class ChatWidget {
   }
 
   private scrollToEnd(): void {
-    this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    this.scrollEl.scrollTop = this.scrollEl.scrollHeight;
   }
 }
 

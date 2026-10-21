@@ -76,140 +76,187 @@
   }
 }
 
-/* ---------- Header ---------- */
+/* ---------- Scroll container (hero, FAQ card, messages) ---------- */
 
-.panel-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 14px 14px 16px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.avatar svg {
-  width: 20px;
-  height: 20px;
-}
-
-.header-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.header-title {
-  font-size: 15px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.header-status {
-  font-size: 12px;
-  opacity: 0.9;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 2px;
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #34d399;
-}
-
-.header-actions {
-  display: flex;
-  gap: 2px;
-}
-
-.icon-btn {
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.85;
-}
-
-.icon-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  opacity: 1;
-}
-
-/* Labeled "new conversation" pill next to the close button. */
-.new-chat-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 26px;
-  padding: 0 10px;
-  margin-right: 2px;
-  border: none;
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.new-chat-btn:hover {
-  background: rgba(255, 255, 255, 0.28);
-}
-
-.new-chat-btn svg {
-  width: 13px;
-  height: 13px;
-}
-
-.icon-btn svg {
-  width: 17px;
-  height: 17px;
-}
-
-/* ---------- Messages ---------- */
-
-.messages {
+.scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background: #fafafa;
+  background:
+    radial-gradient(90% 70% at 88% -6%, rgba(199, 210, 254, 0.55) 0%, rgba(227, 233, 255, 0.25) 40%, rgba(255, 255, 255, 0) 70%),
+    #fff;
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
 }
 
-.messages::-webkit-scrollbar {
+.scroll::-webkit-scrollbar {
   width: 5px;
 }
 
-.messages::-webkit-scrollbar-thumb {
+.scroll::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 3px;
+}
+
+/* ---------- Hero greeting ---------- */
+
+.hero {
+  position: relative;
+  padding: 22px 18px 12px;
+  flex-shrink: 0;
+}
+
+.hero-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 2px;
+  z-index: 1;
+}
+
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background: rgba(17, 24, 39, 0.06);
+  color: #6b7280;
+}
+
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+
+.hero-hi {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.15;
+}
+
+.hero-identity {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-top: 2px;
+}
+
+.hero-subtitle {
+  font-size: 12.5px;
+  color: #9ca3af;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* ---------- FAQ card ---------- */
+
+.faq-card {
+  margin: 8px 14px 0;
+  background: #fff;
+  border: 1px solid #eef0f6;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.05);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.faq-card[hidden] {
+  display: none;
+}
+
+.faq-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 14px;
+  border: none;
+  border-top: 1px solid #f1f2f7;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #1f2937;
+  text-align: left;
+  cursor: pointer;
+}
+
+.faq-row:first-child {
+  border-top: none;
+}
+
+.faq-row:hover {
+  background: #f8f9ff;
+}
+
+.faq-question {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.faq-chev {
+  flex-shrink: 0;
+  display: flex;
+  color: #c3c8d4;
+}
+
+.faq-chev svg {
+  width: 15px;
+  height: 15px;
+}
+
+.faq-refresh-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 20px 4px;
+  flex-shrink: 0;
+}
+
+.faq-refresh-row[hidden] {
+  display: none;
+}
+
+.faq-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: none;
+  color: #6b7280;
+  font-size: 12.5px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.faq-refresh:hover {
+  color: #4f46e5;
+}
+
+.faq-refresh svg {
+  width: 13px;
+  height: 13px;
+}
+/* ---------- Messages ---------- */
+
+.messages {
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .message {
@@ -411,42 +458,6 @@
   margin: 10px 0;
 }
 
-/* FAQ suggestion chips of a fresh conversation. */
-
-.faq-list {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.faq-heading {
-  font-size: 12px;
-  color: #9ca3af;
-  padding-left: 2px;
-}
-
-.faq-chip {
-  align-self: flex-start;
-  max-width: 100%;
-  text-align: left;
-  border: 1px solid #e4e6fa;
-  background: #fff;
-  color: #4f46e5;
-  font-size: 13px;
-  line-height: 1.45;
-  border-radius: 12px;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.faq-chip:hover {
-  background: #eef0ff;
-  border-color: #c7d2fe;
-}
 
 /* Copy action shown under assistant answers. */
 

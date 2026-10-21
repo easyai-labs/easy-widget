@@ -42,13 +42,14 @@ export class ChatApiClient {
     return (await res.json()) as ChatResponseBody;
   }
 
-  /** The app's curated FAQ; entries without an answer are chat starters. */
-  async faqs(): Promise<FaqResponseBody> {
+  /** One page of the app's curated FAQ; entries without an answer are
+   *  chat starters. */
+  async faqs(page: number, pageSize: number): Promise<FaqResponseBody> {
     const { base_url, app_id } = this.config;
     let res: Response;
     try {
       res = await fetch(
-        `${base_url}/api/v1/pub/apps/${encodeURIComponent(app_id)}/faq`,
+        `${base_url}/api/v1/pub/apps/${encodeURIComponent(app_id)}/faqs?page=${page}&page_size=${pageSize}`,
       );
     } catch {
       throw new ChatApiError(0, this.strings.networkError);
