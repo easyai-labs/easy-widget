@@ -55,8 +55,32 @@ export interface FaqEntry {
   answer: string | null;
 }
 
+/**
+ * Stored display customization, verbatim: null when the app was never
+ * customized, and only the fields the admin actually set are present.
+ * The widget owns every default; each set field overrides it.
+ */
+export interface WidgetSettings {
+  display_name?: string;
+  greeting?: string;
+  theme_color?: string;
+  avatar_url?: string;
+  position?: string;
+  input_placeholder?: string;
+  show_faq?: boolean;
+  faq_limit?: number;
+}
+
+/** Response of GET /api/v1/pub/apps/{app_id}/widget: the stored
+ *  customization (nullable) plus the FAQ entries to show — the backend
+ *  already applied show_faq/faq_limit when resolving the list. */
+export interface WidgetBootstrap {
+  widget: WidgetSettings | null;
+  faqs: FaqEntry[] | null;
+}
+
 /** Response of GET /api/v1/pub/apps/{app_id}/faqs. */
-export interface FaqResponseBody {
+export interface FaqPagedResponse {
   faqs: FaqEntry[];
   page: number;
   page_size: number;

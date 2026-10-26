@@ -3,7 +3,8 @@ import type { WidgetStrings } from './i18n';
 import type {
   ChatRequestBody,
   ChatResponseBody,
-  FaqResponseBody,
+  FaqPagedResponse,
+  WidgetBootstrap,
   WidgetConfig,
 } from './types';
 
@@ -42,9 +43,25 @@ export class ChatApiClient {
     return (await res.json()) as ChatResponseBody;
   }
 
-  /** One page of the app's curated FAQ; entries without an answer are
-   *  chat starters. */
-  async faqs(page: number, pageSize: number): Promise<FaqResponseBody> {
+  /** The widget's cold-start payload: resolved display settings plus
+   *  the FAQ entries to show. */
+  async bootstrap(): Promise<WidgetBootstrap> {
+    const { base_url, app_id } = this.config;
+    let res: Response;
+    try {
+      res = await fetch(`${base_url}/api/v1/pub/apps/${encodeURIComponent(app_id)}/widget`);
+    } catch {
+      throw new ChatApiError(0, this.strings.networkError);
+    }
+    if (!res.ok) {
+      throw new ChatApiError(res.status, await this.errorMessage(res));
+    }
+    return (await res.json()) as WidgetBootstrap;
+  }
+
+  /** One page of the app's FAQ; entries without an answer are chat
+   *  starters. Carries the total for the refresh control. */
+  async faqs(page: number, pageSize: number): Promise<FaqPagedResponse> {
     const { base_url, app_id } = this.config;
     let res: Response;
     try {
@@ -57,7 +74,7 @@ export class ChatApiClient {
     if (!res.ok) {
       throw new ChatApiError(res.status, await this.errorMessage(res));
     }
-    return (await res.json()) as FaqResponseBody;
+    return (await res.json()) as FaqPagedResponse;
   }
 
   /** Prefer the server's error field, fall back to the HTTP reason. */
