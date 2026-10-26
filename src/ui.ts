@@ -5,7 +5,7 @@ import type { WidgetStrings } from './i18n';
 import type { ChatApiClient } from './api';
 import type { ConversationStore } from './storage';
 import type { FaqEntry } from './types';
-import type { Reference, StoredMessage, WidgetConfig } from './types';
+import type { Reference, StoredMessage, WidgetConfig, WidgetSettings } from './types';
 
 const MAX_MESSAGE_LENGTH = 4096;
 
@@ -16,7 +16,8 @@ const ICON_SEND = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const ICON_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
 const ICON_CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>`;
-const FAQ_PAGE_SIZE = 5;
+const FAQ_DEFAULT_LIMIT = 5;
+const THEME_FALLBACK = '#6366f1';
 
 /**
  * The chat widget UI: a launcher button fixed to the bottom-right corner
@@ -33,6 +34,9 @@ export class ChatWidget {
   private readonly faqCardEl: HTMLElement;
   private readonly faqRowsEl: HTMLElement;
   private readonly faqRefreshRowEl: HTMLElement;
+  private readonly heroIdentityEl: HTMLElement;
+  private readonly heroSubtitleEl: HTMLElement;
+  private readonly heroAvatarEl: HTMLImageElement;
   private readonly t: WidgetStrings;
   private pending = false;
   /** Bumped on every history clear; in-flight responses from an older
@@ -40,10 +44,12 @@ export class ChatWidget {
   private epoch = 0;
   /** Aborts the in-flight chat request when the history is cleared. */
   private abortCtl: AbortController | null = null;
+  /** Guards against overlapping bootstrap loads on rapid open/close. */
+  private bootstrapping = false;
   /** FAQ pagination; the refresh control advances and wraps to page 1. */
   private faqPage = 1;
   private faqTotal = 0;
-  private faqsLoading = false;
+  private faqLimit = FAQ_DEFAULT_LIMIT;
 
   constructor(
     private readonly config: WidgetConfig,
@@ -62,9 +68,10 @@ export class ChatWidget {
               <button type="button" class="icon-btn new-chat-btn" title="${this.t.newChatTitle}" aria-label="${this.t.newChatAria}">${ICON_RESET}</button>
               <button type="button" class="icon-btn close-btn" title="${this.t.closeTitle}" aria-label="${this.t.closeAria}">${ICON_CLOSE}</button>
             </div>
+            <img class="hero-avatar" hidden alt="" />
             <div class="hero-hi">${this.t.heroHi}</div>
             <div class="hero-identity"></div>
-            <div class="hero-subtitle">${this.t.heroSubtitle}</div>
+            <div class="hero-subtitle"></div>
           </section>
           <section class="faq-card" hidden aria-label="${this.t.faqAria}">
             <div class="faq-rows"></div>
@@ -90,7 +97,10 @@ export class ChatWidget {
     this.faqCardEl = root.querySelector('.faq-card')!;
     this.faqRowsEl = root.querySelector('.faq-rows')!;
     this.faqRefreshRowEl = root.querySelector('.faq-refresh-row')!;
-    root.querySelector('.hero-identity')!.textContent = this.t.heroIdentity(this.config.title ?? this.t.defaultTitle);
+    this.heroIdentityEl = root.querySelector('.hero-identity')!;
+    this.heroSubtitleEl = root.querySelector('.hero-subtitle')!;
+    this.heroAvatarEl = root.querySelector('.hero-avatar')!;
+    this.applySettings(null); // render the built-in defaults until the bootstrap lands
 
     const launcher = root.querySelector('.launcher')!;
     launcher.addEventListener('click', () => this.toggle());
@@ -117,41 +127,101 @@ export class ChatWidget {
     document.body.appendChild(this.host);
     const stored = this.store.load();
     for (const msg of stored.messages) this.renderMessage(msg);
+    void this.loadBootstrap(); // theme the launcher before the first open
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.toggle(false);
     });
   }
 
-  /** Fetch one page of the curated FAQ; failures are silent — it is an
-   *  enhancement. The card keeps its previous rows until fresh data
-   *  lands, and overlapping loads are ignored. */
-  private async loadFaqs(page: number): Promise<void> {
-    if (this.faqsLoading) return;
-    this.faqsLoading = true;
+  /**
+   * Fetch the widget bootstrap (customization + FAQ) from the backend.
+   * Called on every panel open so admin changes reach visitors without a
+   * page reload; failures keep the currently applied look. The widget
+   * object is null when never customized — defaults stay in place.
+   * After rendering the bootstrap's first batch, the paged FAQ endpoint
+   * is probed for the total so the refresh control knows whether there
+   * is more to cycle through.
+   */
+  private async loadBootstrap(): Promise<void> {
+    if (this.bootstrapping) return;
+    this.bootstrapping = true;
     try {
-      const res = await this.api.faqs(page, FAQ_PAGE_SIZE);
+      const boot = await this.api.bootstrap();
+      this.applySettings(boot.widget);
+      const limit = boot.widget?.faq_limit;
+      this.faqLimit = limit && limit > 0 ? limit : FAQ_DEFAULT_LIMIT;
+      this.faqPage = 1;
+      this.faqTotal = 0; // unknown until the paged probe below
+      this.renderFaqPage(boot.faqs ?? []);
+      if ((boot.faqs ?? []).length > 0) {
+        await this.fetchFaqPage(1); // learn the total, normalize page 1
+      }
+    } catch {
+      // Unreachable or legacy backend: the built-in defaults stay.
+    } finally {
+      this.bootstrapping = false;
+    }
+  }
+
+  /** Fetch one FAQ page via the paged endpoint; on failure the
+   *  bootstrap batch stays and the refresh control hides. */
+  private async fetchFaqPage(page: number): Promise<void> {
+    try {
+      const res = await this.api.faqs(page, this.faqLimit);
       this.faqPage = res.page || page;
       this.faqTotal = res.total;
       this.renderFaqPage(res.faqs);
     } catch {
-      // FAQ is optional; the chat keeps working without it.
-    } finally {
-      this.faqsLoading = false;
+      this.faqTotal = 0; // total unknown — no cycling without it
+      this.faqRefreshRowEl.hidden = true;
     }
   }
 
   /** Advance to the next FAQ page, wrapping back to the first. */
   private nextFaqPage(): void {
-    const lastPage = Math.max(1, Math.ceil(this.faqTotal / FAQ_PAGE_SIZE));
+    const lastPage = Math.max(1, Math.ceil(this.faqTotal / this.faqLimit));
     const next = this.faqPage >= lastPage ? 1 : this.faqPage + 1;
-    void this.loadFaqs(next);
+    void this.fetchFaqPage(next);
   }
 
-  /** Render the current FAQ page as the card's question rows. */
+  /**
+   * Applies the backend-resolved display settings over the default
+   * three-line hero (Hi / identity / subtitle). A null payload (bootstrap
+   * unavailable) renders the built-in defaults: localized identity and
+   * subtitle, embed title, fallback theme, right position.
+   */
+  private applySettings(w: WidgetSettings | null): void {
+    const title = w?.display_name?.trim() || this.config.title || this.t.defaultTitle;
+    this.heroIdentityEl.textContent = this.t.heroIdentity(title);
+    // The backend greeting takes over the subtitle line when present.
+    this.heroSubtitleEl.textContent = w?.greeting?.trim() || this.t.heroSubtitle;
+
+    const color = w?.theme_color?.trim();
+    this.host.style.setProperty('--ew-primary', isHexColor(color) ? color! : THEME_FALLBACK);
+
+    this.host.dataset.position = w?.position === 'left' ? 'left' : 'right';
+
+    const avatar = resolveMediaUrl(w?.avatar_url, this.config.base_url);
+    if (avatar) {
+      this.heroAvatarEl.src = avatar;
+      this.heroAvatarEl.alt = title;
+      this.heroAvatarEl.hidden = false;
+    } else {
+      this.heroAvatarEl.removeAttribute('src');
+      this.heroAvatarEl.hidden = true;
+    }
+
+    const placeholder = w?.input_placeholder?.trim();
+    if (placeholder) this.inputEl.placeholder = placeholder;
+  }
+
+  /** Render the FAQ entries as the card's question rows. The refresh
+   *  control appears only when the total exceeds one page and the total
+   *  is known (a paged response was seen). */
   private renderFaqPage(entries: FaqEntry[]): void {
     const rows = entries.filter((entry) => entry.question);
     this.faqCardEl.hidden = rows.length === 0;
-    this.faqRefreshRowEl.hidden = this.faqTotal <= FAQ_PAGE_SIZE;
+    this.faqRefreshRowEl.hidden = !(this.faqTotal > this.faqLimit);
     this.faqRowsEl.replaceChildren(
       ...rows.map((entry) => {
         const row = document.createElement('button');
@@ -187,7 +257,7 @@ export class ChatWidget {
     const launcher = this.host.shadowRoot!.querySelector('.launcher') as HTMLButtonElement;
     launcher.setAttribute('aria-expanded', String(willOpen));
     if (willOpen) {
-      void this.loadFaqs(1); // refresh the FAQ from the backend on every open
+      void this.loadBootstrap(); // refresh customization + FAQ on every open
       this.inputEl.focus();
     }
   }
@@ -374,4 +444,28 @@ async function copyText(text: string): Promise<boolean> {
       return false;
     }
   }
+}
+
+/** Only hex colors pass — anything else would be dropped or could smuggle CSS. */
+function isHexColor(value: string | undefined): value is string {
+  return !!value && /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value);
+}
+
+/**
+ * Backend media URLs may be absolute http(s) or paths relative to the
+ * core-service origin (e.g. /api/v1/pub/uploads/…), never relative to
+ * the host page. Returns null for anything unsafe.
+ */
+function resolveMediaUrl(url: string | undefined, baseUrl: string): string | null {
+  const value = url?.trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith('/')) {
+    try {
+      return new URL(value, baseUrl).href;
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
