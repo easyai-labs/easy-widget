@@ -5,7 +5,10 @@ import type { WidgetStrings } from './i18n';
 import type { ChatApiClient } from './api';
 import type { ConversationStore } from './storage';
 import type { FaqEntry } from './types';
-import type { Reference, StoredMessage, WidgetConfig, WidgetSettings } from './types';
+import type { FormConfig, FormField, Reference, StoredMessage, WidgetConfig, WidgetSettings } from './types';
+
+/** Field shape alias keeps the form builder readable. */
+type FormFieldDef = FormField;
 
 const MAX_MESSAGE_LENGTH = 4096;
 
@@ -38,6 +41,9 @@ export class ChatWidget {
   private readonly heroSubtitleEl: HTMLElement;
   private readonly heroAvatarEl: HTMLImageElement;
   private readonly t: WidgetStrings;
+  /** Stored form definition from the bootstrap; the built-in default is
+   *  used until (and unless) the backend provides one. */
+  private formConfig: FormConfig | null = null;
   private pending = false;
   /** Bumped on every history clear; in-flight responses from an older
    *  epoch are stale (their conversation was discarded) and get dropped. */
@@ -62,7 +68,7 @@ export class ChatWidget {
     root.innerHTML = `
       <style>${styles}</style>
       <div class="panel" hidden role="dialog" aria-label="${this.t.panelAria}">
-        <div class="scroll">
+        <div class="top">
           <section class="hero">
             <div class="hero-controls">
               <button type="button" class="icon-btn new-chat-btn" title="${this.t.newChatTitle}" aria-label="${this.t.newChatAria}">${ICON_RESET}</button>
@@ -73,6 +79,8 @@ export class ChatWidget {
             <div class="hero-identity"></div>
             <div class="hero-subtitle"></div>
           </section>
+        </div>
+        <div class="scroll">
           <section class="faq-card" hidden aria-label="${this.t.faqAria}">
             <div class="faq-rows"></div>
           </section>
@@ -148,6 +156,7 @@ export class ChatWidget {
     try {
       const boot = await this.api.bootstrap();
       this.applySettings(boot.widget);
+      this.formConfig = validFormConfig(boot.form) ? boot.form : null;
       const limit = boot.widget?.faq_limit;
       this.faqLimit = limit && limit > 0 ? limit : FAQ_DEFAULT_LIMIT;
       this.faqPage = 1;
@@ -251,6 +260,130 @@ export class ChatWidget {
     );
   }
 
+  /**
+   * Append the customer-service form into the chat flow, right after
+   * the answer that requested it (chat action open_form). Uses the
+   * backend's form definition; the built-in default (title 联系我们,
+   * one description textarea) shows when the backend returned none.
+   */
+  private appendFormCard(): void {
+    const cfg = this.formConfig ?? defaultFormConfig(this.t);
+    const card = document.createElement('div');
+    card.className = 'form-card';
+    card.setAttribute('aria-label', this.t.formAria);
+
+    const title = document.createElement('div');
+    title.className = 'form-card-title';
+    title.textContent = cfg.title;
+    card.appendChild(title);
+    if (cfg.description) {
+      const desc = document.createElement('div');
+      desc.className = 'form-card-desc';
+      desc.textContent = cfg.description;
+      card.appendChild(desc);
+    }
+
+    const form = document.createElement('form');
+    form.className = 'form-inner';
+    form.append(...cfg.fields.map((field) => this.renderFormField(field)));
+    const error = document.createElement('div');
+    error.className = 'form-error';
+    error.hidden = true;
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.className = 'form-submit';
+    submit.textContent = this.t.formSubmit;
+    form.append(error, submit);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      void this.submitFormCard(card, cfg, error, submit);
+    });
+    card.appendChild(form);
+
+    this.messagesEl.querySelector('.typing')?.remove();
+    this.messagesEl.appendChild(card);
+    this.scrollToEnd();
+  }
+
+  /** One labelled input of the form. */
+  private renderFormField(field: FormFieldDef): HTMLElement {
+    const wrap = document.createElement('label');
+    wrap.className = 'form-field';
+    const label = document.createElement('span');
+    label.className = 'form-label';
+    label.textContent = field.label || field.key;
+    if (field.required) {
+      const req = document.createElement('em');
+      req.className = 'form-req';
+      req.textContent = '*';
+      label.appendChild(req);
+    }
+    const input = document.createElement(field.type === 'textarea' ? 'textarea' : 'input') as HTMLInputElement;
+    if (field.type !== 'textarea') input.type = 'text';
+    input.className = 'form-input';
+    input.dataset.key = field.key;
+    input.maxLength = 2048;
+    wrap.append(label, input);
+    return wrap;
+  }
+
+  /** Validate one flow card against the definition, submit it to the
+   *  backend, and settle the card into its done (or error) state. */
+  private async submitFormCard(
+    card: HTMLElement,
+    cfg: FormConfig,
+    errorEl: HTMLElement,
+    submitBtn: HTMLButtonElement,
+  ): Promise<void> {
+    const inputs = [...card.querySelectorAll('[data-key]')] as HTMLInputElement[];
+    const values: Record<string, string> = {};
+    let firstMissing: HTMLInputElement | null = null;
+    for (const input of inputs) {
+      const value = input.value.trim();
+      const field = cfg.fields.find((f) => f.key === input.dataset.key);
+      values[input.dataset.key!] = value;
+      input.classList.toggle('invalid', !!(field?.required && !value));
+      if (field?.required && !value) firstMissing ??= input;
+    }
+    if (firstMissing) {
+      const field = cfg.fields.find((f) => f.key === firstMissing!.dataset.key);
+      errorEl.textContent = this.t.formRequired(field?.label || firstMissing.dataset.key || '');
+      errorEl.hidden = false;
+      firstMissing.focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    errorEl.hidden = true;
+    const conv = this.store.load();
+    try {
+      await this.api.submitForm(values, conv.conversation_id);
+      this.renderFormDone(card, cfg);
+    } catch (err) {
+      errorEl.textContent = `${this.t.formSubmitFailed}：${(err as Error).message}`;
+      errorEl.hidden = false;
+      submitBtn.disabled = false;
+    }
+  }
+
+  /** Replace a submitted card with its settled in-flow summary. */
+  private renderFormDone(card: HTMLElement, cfg: FormConfig): void {
+    const done = document.createElement('div');
+    done.className = 'form-done';
+    const icon = document.createElement('div');
+    icon.className = 'form-done-icon';
+    icon.innerHTML = ICON_CHECK;
+    const title = document.createElement('div');
+    title.className = 'form-done-title';
+    title.textContent = `${cfg.title} · ${this.t.formSuccessTitle}`;
+    const text = document.createElement('div');
+    text.className = 'form-done-text';
+    text.textContent = this.t.formSuccessText;
+    done.append(icon, title, text);
+    card.replaceChildren(done);
+    this.scrollToEnd();
+  }
+
   private toggle(open?: boolean): void {
     const willOpen = open ?? this.panel.hidden;
     this.panel.hidden = !willOpen;
@@ -306,6 +439,7 @@ export class ChatWidget {
           { role: 'assistant', text: res.answer, references: res.references ?? [] },
         ],
       });
+      if (res.action?.type === 'open_form') this.appendFormCard();
     } catch (err) {
       if (epoch !== this.epoch) return; // history was cleared mid-flight
       // Put the failed text back so the visitor can retry with one click.
@@ -449,6 +583,26 @@ async function copyText(text: string): Promise<boolean> {
 /** Only hex colors pass — anything else would be dropped or could smuggle CSS. */
 function isHexColor(value: string | undefined): value is string {
   return !!value && /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value);
+}
+
+/** A usable form definition: present, with at least one keyed field. */
+function validFormConfig(form: FormConfig | null): form is FormConfig {
+  return (
+    !!form &&
+    typeof form.title === 'string' &&
+    Array.isArray(form.fields) &&
+    form.fields.length > 0 &&
+    form.fields.every((f) => !!f && typeof f.key === 'string' && f.key !== '')
+  );
+}
+
+/** Built-in form shown when the backend defines none. */
+function defaultFormConfig(t: WidgetStrings): FormConfig {
+  return {
+    title: t.defaultFormTitle,
+    description: '',
+    fields: [{ key: 'description', label: t.defaultFormFieldLabel, type: 'textarea', required: true }],
+  };
 }
 
 /**

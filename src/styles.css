@@ -94,14 +94,20 @@
 
 /* ---------- Scroll container (hero, FAQ card, messages) ---------- */
 
+/* Pinned hero greeting: always visible while everything below scrolls. */
+.top {
+  flex-shrink: 0;
+  background:
+    radial-gradient(90% 70% at 88% -6%, rgba(199, 210, 254, 0.55) 0%, rgba(227, 233, 255, 0.25) 40%, rgba(255, 255, 255, 0) 70%),
+    #fff;
+}
+
 .scroll {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(90% 70% at 88% -6%, rgba(199, 210, 254, 0.55) 0%, rgba(227, 233, 255, 0.25) 40%, rgba(255, 255, 255, 0) 70%),
-    #fff;
+  background: #fff;
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
 }
@@ -675,6 +681,147 @@
 :host([data-position='left']) .panel {
   left: 20px;
   right: auto;
+}
+
+/* ---------- Inline form card (chat action: open_form) ---------- */
+
+.form-card {
+  align-self: stretch;
+  background: #fff;
+  border: 1px solid #eef0f6;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.05);
+  padding: 14px;
+}
+
+.form-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.form-card-desc {
+  font-size: 12.5px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-top: 4px;
+  white-space: pre-wrap;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.form-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-req {
+  color: #ef4444;
+  font-style: normal;
+  margin-left: 2px;
+}
+
+.form-input {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #111827;
+  background: #fafafa;
+  outline: none;
+  resize: vertical;
+}
+
+textarea.form-input {
+  min-height: 76px;
+}
+
+.form-input:focus {
+  border-color: var(--ew-primary-ring);
+  background: #fff;
+}
+
+.form-input.invalid,
+.form-input.invalid:focus {
+  border-color: #f87171;
+  background: #fef2f2;
+}
+
+.form-error {
+  font-size: 12.5px;
+  color: #b91c1c;
+  margin-top: 10px;
+  white-space: pre-wrap;
+}
+
+.form-submit {
+  width: 100%;
+  height: 38px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--ew-primary);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.form-submit:hover:not(:disabled) {
+  background: var(--ew-primary-deep);
+}
+
+.form-submit:disabled {
+  background: #d1d5db;
+  cursor: default;
+}
+
+/* Settled state of a submitted card. */
+
+.form-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 4px 4px;
+}
+
+.form-done-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-done-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.form-done-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111827;
+  margin-top: 10px;
+}
+
+.form-done-text {
+  font-size: 12.5px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-top: 4px;
 }
 
 /* ---------- Small screens: nearly fullscreen panel ---------- */

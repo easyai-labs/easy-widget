@@ -77,6 +77,25 @@ export class ChatApiClient {
     return (await res.json()) as FaqPagedResponse;
   }
 
+  /** Submit the customer-service form; the optional conversation links
+   *  the chat that led here. */
+  async submitForm(values: Record<string, string>, conversationId?: string): Promise<void> {
+    const { base_url, app_id } = this.config;
+    let res: Response;
+    try {
+      res = await fetch(`${base_url}/api/v1/pub/apps/${encodeURIComponent(app_id)}/form-submissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values, conversation_id: conversationId }),
+      });
+    } catch {
+      throw new ChatApiError(0, this.strings.networkError);
+    }
+    if (!res.ok) {
+      throw new ChatApiError(res.status, await this.errorMessage(res));
+    }
+  }
+
   /** Prefer the server's error field, fall back to the HTTP reason. */
   private async errorMessage(res: Response): Promise<string> {
     try {

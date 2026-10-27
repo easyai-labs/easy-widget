@@ -24,6 +24,14 @@ export interface WidgetStrings {
   refsSummary: (count: number) => string;
   networkError: string;
   httpError: (status: number) => string;
+  formAria: string;
+  formSubmit: string;
+  formSuccessTitle: string;
+  formSuccessText: string;
+  formRequired: (label: string) => string;
+  formSubmitFailed: string;
+  defaultFormTitle: string;
+  defaultFormFieldLabel: string;
 }
 
 const zhCN: WidgetStrings = {
@@ -51,6 +59,14 @@ const zhCN: WidgetStrings = {
   refsSummary: (count) => `引用了 ${count} 个来源`,
   networkError: '无法连接客服服务，请稍后重试',
   httpError: (status) => `请求失败（HTTP ${status}）`,
+  formAria: '填写表单',
+  formSubmit: '提交',
+  formSuccessTitle: '提交成功',
+  formSuccessText: '我们已收到你的信息，会尽快与你联系。',
+  formRequired: (label) => `请填写「${label}」`,
+  formSubmitFailed: '提交失败',
+  defaultFormTitle: '联系我们',
+  defaultFormFieldLabel: '描述',
 };
 
 const en: WidgetStrings = {
@@ -78,6 +94,14 @@ const en: WidgetStrings = {
   refsSummary: (count) => `Cited ${count} source${count === 1 ? '' : 's'}`,
   networkError: 'Cannot reach the support service. Please try again later.',
   httpError: (status) => `Request failed (HTTP ${status})`,
+  formAria: 'Fill in the form',
+  formSubmit: 'Submit',
+  formSuccessTitle: 'Submitted',
+  formSuccessText: "We received your information and will get back to you soon.",
+  formRequired: (label) => `Please fill in "${label}"`,
+  formSubmitFailed: 'Submit failed',
+  defaultFormTitle: 'Contact us',
+  defaultFormFieldLabel: 'Description',
 };
 
 const DICTS: Record<string, WidgetStrings> = { 'zh-CN': zhCN, en };
