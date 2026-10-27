@@ -32,6 +32,24 @@ export interface ChatResponseBody {
   answer: string;
   references: Reference[] | null;
   usage: { prompt_tokens: number; completion_tokens: number };
+  /** UI instruction for the widget, e.g. {type: "open_form"}. */
+  action?: { type: string } | null;
+}
+
+/** One field of the app's customer-service form definition. */
+export interface FormField {
+  key: string;
+  label: string;
+  type: string; // text | textarea
+  required: boolean;
+}
+
+/** The app's stored form definition; the widget keeps a default when
+ *  the backend returns null. */
+export interface FormConfig {
+  title: string;
+  description: string;
+  fields: FormField[];
 }
 
 /** A message kept in the local conversation history. */
@@ -72,10 +90,12 @@ export interface WidgetSettings {
 }
 
 /** Response of GET /api/v1/pub/apps/{app_id}/widget: the stored
- *  customization (nullable) plus the FAQ entries to show — the backend
- *  already applied show_faq/faq_limit when resolving the list. */
+ *  customization (nullable), the form definition (nullable), and the
+ *  FAQ entries to show — the backend already applied show_faq/faq_limit
+ *  when resolving the list. */
 export interface WidgetBootstrap {
   widget: WidgetSettings | null;
+  form: FormConfig | null;
   faqs: FaqEntry[] | null;
 }
 
