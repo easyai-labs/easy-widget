@@ -606,36 +606,45 @@
   }
 }
 
-/* ---------- Composer ---------- */
+/* ---------- Composer: send button embedded inside the input ---------- */
 
 .composer {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px solid #eceef2;
+  padding: 10px 12px 12px;
+  border-top: 1px solid #f1f2f7;
   background: #fff;
   flex-shrink: 0;
+}
+
+/* Carries the input's original look; the textarea is transparent
+   inside it and the send button sits in its right edge. */
+.input-pill {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 5px 5px 5px 12px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.input-pill:focus-within {
+  background: #fff;
+  border-color: var(--ew-primary-ring);
 }
 
 .composer textarea {
   flex: 1;
   resize: none;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  padding: 8px 0;
   font: inherit;
   font-size: 14px;
   line-height: 1.45;
   max-height: 110px;
   outline: none;
-  background: #fafafa;
   color: #111827;
-}
-
-.composer textarea:focus {
-  border-color: var(--ew-primary-ring);
-  background: #fff;
 }
 
 .composer textarea::placeholder {
@@ -643,22 +652,30 @@
 }
 
 .send-btn {
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
+  margin-bottom: 1px;
   border: none;
-  border-radius: 12px;
+  border-radius: 50%;
   background: var(--ew-primary);
   color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-radius 0.15s ease;
 }
 
 .send-btn:hover:not(:disabled) {
   background: var(--ew-primary-deep);
+}
+
+/* While an answer is generating the glyph is a single square block,
+   about a third of the button — the circle itself stays put. */
+.send-btn.stopping svg {
+  width: 20px;
+  height: 20px;
 }
 
 .send-btn:disabled {
@@ -667,8 +684,8 @@
 }
 
 .send-btn svg {
-  width: 17px;
-  height: 17px;
+  width: 14px;
+  height: 14px;
 }
 
 /* ---------- Left position (data-position="left" on the host) ---------- */
