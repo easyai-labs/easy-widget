@@ -4,6 +4,7 @@ export interface WidgetStrings {
   inputPlaceholder: string;
   inputAria: string;
   sendAria: string;
+  stopAria: string;
   launcherAria: string;
   panelAria: string;
   closeTitle: string;
@@ -39,6 +40,7 @@ const zhCN: WidgetStrings = {
   inputPlaceholder: '输入消息…',
   inputAria: '消息输入框',
   sendAria: '发送',
+  stopAria: '停止生成',
   launcherAria: '打开智能客服',
   panelAria: '智能客服聊天窗口',
   closeTitle: '关闭',
@@ -74,6 +76,7 @@ const en: WidgetStrings = {
   inputPlaceholder: 'Type a message…',
   inputAria: 'Message input',
   sendAria: 'Send',
+  stopAria: 'Stop generating',
   launcherAria: 'Open AI support chat',
   panelAria: 'AI support chat window',
   closeTitle: 'Close',

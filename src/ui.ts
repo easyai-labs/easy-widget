@@ -15,7 +15,8 @@ const MAX_MESSAGE_LENGTH = 4096;
 const ICON_CHAT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
 const ICON_CLOSE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 const ICON_RESET = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>`;
-const ICON_SEND = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor" stroke="none"/></svg>`;
+const ICON_SEND = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`;
+const ICON_STOP = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>`;
 const ICON_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
 const ICON_CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>`;
@@ -90,8 +91,10 @@ export class ChatWidget {
           <div class="messages"></div>
         </div>
         <form class="composer">
-          <textarea rows="1" placeholder="${this.t.inputPlaceholder}" maxlength="${MAX_MESSAGE_LENGTH}" aria-label="${this.t.inputAria}"></textarea>
-          <button type="submit" class="send-btn" aria-label="${this.t.sendAria}">${ICON_SEND}</button>
+          <div class="input-pill">
+            <textarea rows="1" placeholder="${this.t.inputPlaceholder}" maxlength="${MAX_MESSAGE_LENGTH}" aria-label="${this.t.inputAria}"></textarea>
+            <button type="button" class="send-btn" aria-label="${this.t.sendAria}">${ICON_SEND}</button>
+          </div>
         </form>
       </div>
       <button type="button" class="launcher" aria-label="${this.t.launcherAria}" aria-expanded="false">${ICON_CHAT}</button>
@@ -120,6 +123,15 @@ export class ChatWidget {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       void this.sendMessage();
+    });
+    this.sendBtnEl.addEventListener('click', () => {
+      // While generating the button is a stop control; it aborts the
+      // in-flight request instead of submitting.
+      if (this.pending) {
+        this.stopGenerating();
+        return;
+      }
+      form.requestSubmit();
     });
     this.inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -442,6 +454,12 @@ export class ChatWidget {
       if (res.action?.type === 'open_form') this.appendFormCard();
     } catch (err) {
       if (epoch !== this.epoch) return; // history was cleared mid-flight
+      if ((err as Error).name === 'AbortError') {
+        // The visitor stopped the generation: drop the typing indicator
+        // and let the conversation continue; the question stays in flow
+        // and was already recorded server-side.
+        return;
+      }
       // Put the failed text back so the visitor can retry with one click.
       this.inputEl.value = text;
       this.autogrow();
@@ -461,8 +479,11 @@ export class ChatWidget {
 
   private setPending(pending: boolean): void {
     this.pending = pending;
-    this.sendBtnEl.disabled = pending;
-    this.inputEl.disabled = pending;
+    // The button flips between send (circle, plane) and stop (rounded
+    // square, filled square) for the in-flight request.
+    this.sendBtnEl.classList.toggle('stopping', pending);
+    this.sendBtnEl.innerHTML = pending ? ICON_STOP : ICON_SEND;
+    this.sendBtnEl.setAttribute('aria-label', pending ? this.t.stopAria : this.t.sendAria);
     this.messagesEl.querySelector('.typing')?.remove();
     if (pending) {
       const typing = document.createElement('div');
@@ -471,6 +492,11 @@ export class ChatWidget {
       this.messagesEl.appendChild(typing);
       this.scrollToEnd();
     }
+  }
+
+  /** Abort the in-flight chat request (visitor pressed stop). */
+  private stopGenerating(): void {
+    this.abortCtl?.abort();
   }
 
   /** Append one message bubble (or error notice) to the panel. */
