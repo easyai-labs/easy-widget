@@ -301,11 +301,19 @@ export class ChatWidget {
     const error = document.createElement('div');
     error.className = 'form-error';
     error.hidden = true;
+    const actions = document.createElement('div');
+    actions.className = 'form-actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'form-cancel';
+    cancel.textContent = this.t.formCancel;
+    cancel.addEventListener('click', () => this.renderFormCancelled(card, cfg));
     const submit = document.createElement('button');
     submit.type = 'submit';
     submit.className = 'form-submit';
     submit.textContent = this.t.formSubmit;
-    form.append(error, submit);
+    actions.append(cancel, submit);
+    form.append(error, actions);
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       void this.submitFormCard(card, cfg, error, submit);
@@ -391,6 +399,24 @@ export class ChatWidget {
     const text = document.createElement('div');
     text.className = 'form-done-text';
     text.textContent = this.t.formSuccessText;
+    done.append(icon, title, text);
+    card.replaceChildren(done);
+    this.scrollToEnd();
+  }
+
+  /** Settle a card the visitor cancelled: nothing is submitted. */
+  private renderFormCancelled(card: HTMLElement, cfg: FormConfig): void {
+    const done = document.createElement('div');
+    done.className = 'form-done cancelled';
+    const icon = document.createElement('div');
+    icon.className = 'form-done-icon';
+    icon.innerHTML = ICON_CLOSE;
+    const title = document.createElement('div');
+    title.className = 'form-done-title';
+    title.textContent = `${cfg.title} · ${this.t.formCancelled}`;
+    const text = document.createElement('div');
+    text.className = 'form-done-text';
+    text.textContent = this.t.formCancelledText;
     done.append(icon, title, text);
     card.replaceChildren(done);
     this.scrollToEnd();

@@ -27,6 +27,9 @@ export interface WidgetStrings {
   httpError: (status: number) => string;
   formAria: string;
   formSubmit: string;
+  formCancel: string;
+  formCancelled: string;
+  formCancelledText: string;
   formSuccessTitle: string;
   formSuccessText: string;
   formRequired: (label: string) => string;
@@ -63,6 +66,9 @@ const zhCN: WidgetStrings = {
   httpError: (status) => `请求失败（HTTP ${status}）`,
   formAria: '填写表单',
   formSubmit: '提交',
+  formCancel: '取消',
+  formCancelled: '已取消',
+  formCancelledText: '表单未提交',
   formSuccessTitle: '提交成功',
   formSuccessText: '我们已收到你的信息，会尽快与你联系。',
   formRequired: (label) => `请填写「${label}」`,
@@ -99,6 +105,9 @@ const en: WidgetStrings = {
   httpError: (status) => `Request failed (HTTP ${status})`,
   formAria: 'Fill in the form',
   formSubmit: 'Submit',
+  formCancel: 'Cancel',
+  formCancelled: 'Cancelled',
+  formCancelledText: 'The form was not submitted',
   formSuccessTitle: 'Submitted',
   formSuccessText: "We received your information and will get back to you soon.",
   formRequired: (label) => `Please fill in "${label}"`,

@@ -779,10 +779,32 @@ textarea.form-input {
   white-space: pre-wrap;
 }
 
-.form-submit {
-  width: 100%;
-  height: 38px;
+.form-actions {
+  display: flex;
+  gap: 8px;
   margin-top: 12px;
+}
+
+.form-cancel {
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.form-cancel:hover {
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.form-submit {
+  flex: 1;
+  height: 38px;
   border: none;
   border-radius: 10px;
   background: var(--ew-primary);
@@ -825,6 +847,11 @@ textarea.form-input {
 .form-done-icon svg {
   width: 22px;
   height: 22px;
+}
+
+.form-done.cancelled .form-done-icon {
+  background: #f3f4f6;
+  color: #9ca3af;
 }
 
 .form-done-title {
